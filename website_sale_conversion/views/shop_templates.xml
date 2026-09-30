@@ -26,4 +26,28 @@
             </nav>
         </xpath>
     </template>
+
+    <!--
+        El selector de orden lee `website.shop_default_sort` para saber qué
+        mostrar como activo (website_sale/views/templates.xml:967 y :981).
+        Como el default de este módulo NO se guarda ahí -se resuelve en el
+        controlador, para no escribir un campo de website_sale (restricción
+        6)-, sin esto la tienda ordena por "Más vendidos" mientras el
+        selector dice "Destacado". Se sustituye solo el valor por defecto:
+        si el visitante eligió un orden, manda el suyo.
+    -->
+    <template id="mkt_conv_sort_label" inherit_id="website_sale.sort"
+              name="Selector de orden: reflejar el default del módulo">
+        <xpath expr="//t[@t-set='_current_sort']" position="before">
+            <t t-set="mkt_conv_default_sort"
+               t-value="'sales_velocity desc' if website.mkt_conv_sort_by_velocity else website.shop_default_sort"/>
+        </xpath>
+        <xpath expr="//t[@t-set='_current_sort']" position="attributes">
+            <attribute name="t-value">isSortingBy and isSortingBy[0][0] or mkt_conv_default_sort</attribute>
+        </xpath>
+        <xpath expr="//span[@t-out=&quot;dict(website_sale_sortable)[website.shop_default_sort]&quot;]"
+               position="attributes">
+            <attribute name="t-out">dict(website_sale_sortable)[mkt_conv_default_sort]</attribute>
+        </xpath>
+    </template>
 </odoo>
