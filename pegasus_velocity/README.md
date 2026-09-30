@@ -108,36 +108,24 @@ TIPO_DOCUMEN  CODIGO   unidades   TOT_PRECIO
 El whitelist de `TIPO_DOCUMEN` aplicado tambien a las unidades -la
 correccion respecto de RPweb- es lo correcto y se conserva tal cual.
 
-### 2. Devoluciones de `ventas_devoluciones`: PENDIENTE
+### 2. Devoluciones: VERIFICADO, tampoco hace falta corregir nada
 
-Hay **1.463 lineas** en `dbo.ventas` con `nro_devolucion IS NOT NULL` que no
-son nota de credito. Eso todavia no prueba que haya devoluciones sin netear:
-puede ser que la **venta original** quede marcada con el numero de devolucion
-como referencia hacia atras, y que la devolucion en si ya este netada como
-nota de credito.
+Los 1.463 documentos con `nro_devolucion` no nulo que no son nota de credito
+se desglosan en 7.214 lineas de detalle, y **ninguna tiene unidades
+positivas**:
 
-Lo que decide es el signo de las unidades y si el tipo cae dentro del
-whitelist:
-
-```sql
-SELECT a.TIPO_DOCUMEN,
-       COUNT(*)                                          AS lineas,
-       SUM(CASE WHEN b.unidades < 0 THEN 1 ELSE 0 END)   AS lineas_negativas,
-       SUM(CASE WHEN b.unidades > 0 THEN 1 ELSE 0 END)   AS lineas_positivas,
-       SUM(b.unidades)                                   AS unidades_netas
-FROM dbo.ventas a
-INNER JOIN dbo.ventas_det b ON a.NRO_REG = b.NRO_REG
-WHERE a.nro_devolucion IS NOT NULL
-  AND a.TIPO_DOCUMEN NOT IN (30,33,36,451,452,476,478,484)
-GROUP BY a.TIPO_DOCUMEN
-ORDER BY lineas DESC;
+```
+TIPO_DOCUMEN  lineas  negativas  positivas  unidades_netas  whitelist
+482             7110       7110          0      -15817.100  CUENTA
+480               74         74          0         -87.000  CUENTA
+17                30         30          0         -64.000  IGNORADO
 ```
 
-- Si esos tipos **no estan en el whitelist**: ya quedan afuera, nada que hacer.
-- Si estan en el whitelist con unidades **negativas**: ya restan, nada que hacer.
-- Si estan en el whitelist con unidades **positivas**: hay devoluciones
-  sumando en vez de restando y hay que netear `ventas_devoluciones` aparte.
+Los tipos 480 y 482 estan dentro del whitelist y vienen en negativo: ya
+restan. El tipo 17 queda afuera del whitelist, o sea que sus -64 unidades no
+se restan; contra las ~15.900 que si se netean es ruido, y si la venta
+original tambien es tipo 17 queda excluida igual y no hay sesgo. No se
+corrige.
 
-Hasta resolverlo, el orden por "Mas vendidos" puede sobrestimar a los
-productos mas devueltos. **No actives el toggle en produccion antes de
-cerrar este punto.**
+**Conclusion: `SUM(unidades)` con el whitelist es correcto tal cual. No hay
+devoluciones sumando en positivo.**
