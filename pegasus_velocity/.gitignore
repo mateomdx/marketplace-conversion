@@ -1,2 +1,6 @@
 config.ini
 reportes/
+
+# El .gitignore de la raiz ignora *.sql, pero este query ES el modulo:
+# sync_velocity.py lo lee al arrancar y sin el no corre.
+!velocidad_unidades.sql
