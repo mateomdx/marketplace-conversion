@@ -91,45 +91,53 @@ Programador de tareas de Windows o `cron`.
 Se guarda la fecha de la ultima sincronizacion exitosa en
 `ir.config_parameter`, clave `website_sale_conversion.velocity_last_sync`.
 
-## Dos cosas sin verificar
+## Estado de la verificacion contra PEGASUS
 
-No tengo acceso a PEGASUS, asi que estas dos quedan pendientes de una
-comprobacion tuya. Las dos afectan el signo de las unidades.
+### 1. Notas de credito: VERIFICADO, no hace falta corregir nada
 
-### 1. ¿Las notas de credito tienen `unidades` negativas?
+Las lineas de nota de credito traen **`unidades` negativas**, no solo el
+importe. `SUM(unidades)` las netea solo. Muestra del 2026-09-30:
 
-El reporte original verifica que el 100% de sus lineas tiene **importe**
-negativo. Importe, no unidades. Si el importe viene negativo pero las
-unidades positivas, `SUM(unidades)` **suma** las devoluciones en vez de
-restarlas, y los productos mas devueltos suben en el ranking.
+```
+TIPO_DOCUMEN  CODIGO   unidades   TOT_PRECIO
+33            248835   -1.00000   -668182.00000
+30            234850   -3.00000    -60000.00000
+30            129090   -6.00000   -272727.00000
+```
+
+El whitelist de `TIPO_DOCUMEN` aplicado tambien a las unidades -la
+correccion respecto de RPweb- es lo correcto y se conserva tal cual.
+
+### 2. Devoluciones de `ventas_devoluciones`: PENDIENTE
+
+Hay **1.463 lineas** en `dbo.ventas` con `nro_devolucion IS NOT NULL` que no
+son nota de credito. Eso todavia no prueba que haya devoluciones sin netear:
+puede ser que la **venta original** quede marcada con el numero de devolucion
+como referencia hacia atras, y que la devolucion en si ya este netada como
+nota de credito.
+
+Lo que decide es el signo de las unidades y si el tipo cae dentro del
+whitelist:
 
 ```sql
-SELECT TOP 20 a.TIPO_DOCUMEN, b.CODIGO, b.unidades, b.TOT_PRECIO
+SELECT a.TIPO_DOCUMEN,
+       COUNT(*)                                          AS lineas,
+       SUM(CASE WHEN b.unidades < 0 THEN 1 ELSE 0 END)   AS lineas_negativas,
+       SUM(CASE WHEN b.unidades > 0 THEN 1 ELSE 0 END)   AS lineas_positivas,
+       SUM(b.unidades)                                   AS unidades_netas
 FROM dbo.ventas a
 INNER JOIN dbo.ventas_det b ON a.NRO_REG = b.NRO_REG
-WHERE a.TIPO_DOCUMEN IN (30,33,36,451,452,476,478,484)
-ORDER BY a.FECHA DESC;
+WHERE a.nro_devolucion IS NOT NULL
+  AND a.TIPO_DOCUMEN NOT IN (30,33,36,451,452,476,478,484)
+GROUP BY a.TIPO_DOCUMEN
+ORDER BY lineas DESC;
 ```
 
-Si `unidades` sale positiva, hay que corregir el SQL asi:
+- Si esos tipos **no estan en el whitelist**: ya quedan afuera, nada que hacer.
+- Si estan en el whitelist con unidades **negativas**: ya restan, nada que hacer.
+- Si estan en el whitelist con unidades **positivas**: hay devoluciones
+  sumando en vez de restando y hay que netear `ventas_devoluciones` aparte.
 
-```sql
-SUM(CASE WHEN a.TIPO_DOCUMEN IN (30,33,36,451,452,476,478,484)
-         THEN -ABS(b.unidades) ELSE b.unidades END)
-```
-
-### 2. ¿Las devoluciones de `ventas_devoluciones` ya estan como nota de credito?
-
-`dbo.ventas` tiene la columna `nro_devolucion` y existe una tabla
-`ventas_devoluciones` que este query no toca. Si una devolucion se registra
-**solo** ahi y no genera nota de credito en `dbo.ventas`, las unidades quedan
-sobrestimadas.
-
-```sql
-SELECT COUNT(*) AS devoluciones_sin_nota_de_credito
-FROM dbo.ventas
-WHERE nro_devolucion IS NOT NULL
-  AND TIPO_DOCUMEN NOT IN (30,33,36,451,452,476,478,484);
-```
-
-Si da mayor que cero, hay que netear `ventas_devoluciones` aparte.
+Hasta resolverlo, el orden por "Mas vendidos" puede sobrestimar a los
+productos mas devueltos. **No actives el toggle en produccion antes de
+cerrar este punto.**
