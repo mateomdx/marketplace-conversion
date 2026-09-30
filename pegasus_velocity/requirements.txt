@@ -1,0 +1,3 @@
+# Driver de SQL Server en Python PURO: no necesita FreeTDS ni el ODBC Driver
+# de Microsoft, o sea que no hace falta apt ni permisos de administrador.
+python-tds>=1.15
