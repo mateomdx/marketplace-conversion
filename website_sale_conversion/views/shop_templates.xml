@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        R4 — Pills horizontales ESTÁTICAS de subcategorías sobre la grilla.
+
+        Se insertan dentro de #o_wsale_products_header, que está en
+        `website_sale.products` PERO fuera de #o_wsale_products_grid. Es lo
+        que importa: website_sale_infinite_scrolling re-renderiza esa
+        plantilla y extrae únicamente #o_wsale_products_grid
+        (website_sale_infinite_scrolling/controllers/main.py:44), así que el
+        scroll infinito NO duplica las pills en cada página cargada.
+
+        Se usa `keep()` para conservar search / filtros / orden al navegar.
+    -->
+    <template id="mkt_conv_category_pills" inherit_id="website_sale.products"
+              name="Pills de subcategorías sobre la grilla">
+        <xpath expr="//header[@id='o_wsale_products_header']" position="inside">
+            <t t-set="mkt_conv_pills"
+               t-value="website._mkt_conv_pill_categories(category)"/>
+            <nav t-if="mkt_conv_pills" class="o_mkt_conv_pills"
+                 aria-label="Subcategorías">
+                <a t-foreach="mkt_conv_pills" t-as="mkt_pill"
+                   t-att-href="keep(mkt_pill['url'], page=0)"
+                   class="o_mkt_conv_pill"
+                   t-out="mkt_pill['name']"/>
+            </nav>
+        </xpath>
+    </template>
+</odoo>

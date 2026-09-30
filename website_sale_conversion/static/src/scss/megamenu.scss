@@ -1,0 +1,45 @@
+///
+/// R4 — Riel "Comprar por marca" del megamenú: más chico, 8 por vista.
+///
+/// El megamenú de este sitio NO es el nativo de Odoo ni HTML suelto en la
+/// base: lo renderiza website_market_v1 (.o_mkt_megamenu). Verificado en
+/// producción sobre marketplace.odoo.com/shop.
+///
+/// Medidas reales tomadas ahí:
+///   ancho útil del riel .......... 984 px
+///   ítem ......................... 148 px + gap .6rem (9.6 px)
+///   marcas por vista ............. 6.24
+///   alto del logo ................ 38 px
+///
+/// Para 8 por vista:  (984 - 7 * 9.6) / 8 = 114.6  ->  112 px
+///   984 / (112 + 9.6) = 8.09 por vista.
+///
+/// Se tocan SOLO las tres medidas que gobiernan el tamaño. La navegación
+/// del riel (flechas .o_mkt_brands_arrow, scroll de a una "página") la
+/// maneja el JS de website_market_v1 leyendo el ancho real del ítem, así
+/// que sigue funcionando sin tocar JS.
+///
+
+.o_mkt_megamenu {
+
+    .o_mkt_brands_rail .o_mkt_brand_item {
+        width: 112px;
+    }
+
+    .o_mkt_brand_card {
+        min-height: 52px;
+        padding: .35rem .5rem;
+        gap: .2rem;
+    }
+
+    .o_mkt_brand_logo {
+        height: 26px;
+    }
+
+    // El wordmark bajo el logo acompaña la reducción para que la tarjeta no
+    // quede desbalanceada.
+    .o_mkt_brand_caption {
+        font-size: .75rem;
+        line-height: 1.15;
+    }
+}

@@ -1,0 +1,140 @@
+///
+/// R2 + R3 — Sidebar de /shop: compacto, con scroll interno y sticky útil.
+///
+/// Todo acá es SCSS acotado a #products_grid_before. Ni un xpath: la
+/// plantilla del sidebar tiene copias COW por sitio
+/// (website_sale.products_categories_list y compañía) y vir_website ya
+/// xpathea //t[@t-set='sorted_values'] en
+/// website_sale.filter_radio_and_multi_attributes. Heredar ahí es
+/// pelearse por el mismo nodo; el CSS es inmune a las dos cosas.
+///
+/// El offcanvas móvil (#o_wsale_offcanvas) queda FUERA de este scope a
+/// propósito: R3 pide no tocar el comportamiento en móvil.
+///
+
+#products_grid_before {
+
+    // ── R2: cada lista de filtros, 250px con scroll propio ──────────────
+    // El id lo genera la plantilla nativa como o_products_attributes_{{a.id}}
+    // y contiene TODO el bloque del atributo: los 8 valores visibles y el
+    // colapso #o_wsale_remaining_values_{{a.id}} con el resto. Un solo
+    // contenedor de scroll para la lista completa.
+    [id^="o_products_attributes_"],
+    .products_categories_list,
+    #o_shop_collapse_category {
+        max-height: 250px;
+        overflow-y: auto;
+        // Que la rueda no se "escape" al scroll de la página al llegar al
+        // final de la lista.
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+
+    // ── R2: fuera el "Ver más" ──────────────────────────────────────────
+    // La plantilla nativa parte la lista en 8 + colapso cuando hay más de 8
+    // valores (website_sale/views/templates.xml:1093-1135). Con scroll
+    // interno el colapso sobra: se oculta el botón y se despliega el resto
+    // de forma permanente.
+    .o_wsale_view_more_btn {
+        display: none !important;
+    }
+
+    [id^="o_wsale_remaining_values_"] {
+        display: block !important;
+    }
+
+    // ── R2: padding reducido, área de toque mínima de 28px ──────────────
+    .form-check {
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        margin-bottom: 0 !important;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .form-check-label {
+        // El label ocupa la fila entera: el área clicable es la de 28px,
+        // no solo el texto.
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-height: 28px;
+        line-height: 1.2;
+    }
+
+    // Los <li> de la jerarquía de categorías (padre/hijo) conservan su
+    // estructura: solo se les baja el aire vertical.
+    .products_categories_list li > a,
+    #o_shop_collapse_category li > a {
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        padding-top: .15rem;
+        padding-bottom: .15rem;
+    }
+
+    // ── R3: sticky solo en escritorio ───────────────────────────────────
+    // El <aside> YA viene con .position-sticky de fábrica y el `top` sale de
+    // --o_ws_sidebar_top_gap, una variable que website_sale declara
+    // literalmente "to ease custom-headers overrides"
+    // (website_sale/static/src/scss/website_sale.scss:24). Se usa ese hook
+    // en vez de pisar `top`.
+    //
+    // OJO: en este sitio el header NO queda fijo al hacer scroll (medido en
+    // producción: header#top vuelve a position static y se va con la
+    // página), así que "altura del header + 20px" desperdiciaría 136px de
+    // viewport para siempre. Se deja un gap chico y configurable.
+    @include media-breakpoint-up(lg) {
+        --o_ws_sidebar_top_gap: 20px;
+
+        // El rail interno viene con .vh-100 (height: 100vh !important de
+        // Bootstrap). Con top: 20px eso deja el último tramo por debajo del
+        // fold, inalcanzable — medido en producción: rail de 873px en un
+        // viewport de 865px. Se lo convierte en max-height real.
+        > .o_wsale_products_grid_before_rail {
+            height: auto !important;
+            max-height: calc(100vh - var(--o_ws_sidebar_top_gap) - 20px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+    }
+}
+
+///
+/// R4 — Pills estáticas de subcategorías sobre la grilla.
+///
+.o_mkt_conv_pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-top: .25rem;
+
+    .o_mkt_conv_pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: .2rem .8rem;
+        border: 1px solid var(--mkt-line, #e0e0e0);
+        border-radius: 999px;
+        background: var(--mkt-surface, #fff);
+        color: var(--mkt-ink, inherit);
+        font-size: .875rem;
+        line-height: 1.2;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: border-color .2s ease, color .2s ease;
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--mkt-gold, currentColor);
+            color: var(--mkt-ink, inherit);
+            text-decoration: none;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--mkt-gold, currentColor);
+            outline-offset: 2px;
+        }
+    }
+}

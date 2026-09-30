@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.form.website.sale.conversion</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <block id="website_payment_block" position="inside">
+                <setting id="mkt_conv_sort_by_velocity_setting"
+                         string="Ordenar por más vendidos"
+                         help="Usa la velocidad de venta de PEGASUS como orden por defecto de la tienda. El visitante puede elegir otro orden y se respeta.">
+                    <field name="mkt_conv_sort_by_velocity"/>
+                </setting>
+            </block>
+        </field>
+    </record>
+</odoo>
